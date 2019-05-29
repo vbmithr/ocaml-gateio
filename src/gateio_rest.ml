@@ -10,6 +10,9 @@ type error = {
   message: string ;
 } [@@deriving sexp]
 
+let pp_print_error ppf t =
+  Format.fprintf ppf "%a" Sexplib.Sexp.pp (sexp_of_error t)
+
 let error_encoding =
   let open Json_encoding in
   conv
@@ -23,12 +26,14 @@ let error_encoding =
 let ok_encoding encoding =
   let open Json_encoding in
   conv
-    (fun a -> ((), ""), a)
+    (fun a -> ((), "", 0), a)
     (fun (_, a) -> a)
     (merge_objs
-       (obj2
+       (obj3
           (req "result" (constant "true"))
-          (req "message" string)) encoding)
+          (req "message" string)
+          (req "code" int))
+       encoding)
 
 let result_encoding encoding =
   let open Json_encoding in
@@ -45,8 +50,8 @@ let auth service { key ; secret ; _ } =
   let `Hex sign_hex = Hex.of_string sign in
   let headers =
     Httpaf.Headers.of_list [
-      "KEY", key ;
-      "SIGN", sign_hex ;
+      "Key", key ;
+      "Sign", sign_hex ;
     ] in
   { params = service.params ; headers }
 
@@ -152,13 +157,16 @@ let trade_encoding =
        { id ; orderid ; pair ; side ; price ; qty ; time })
     (merge_objs unit
        (obj7
-          (req "id" Encoding.strint)
-          (req "orderid" Encoding.strint)
+          (req "tradeID" int53)
+          (req "orderNumber" int53)
           (req "pair" Pair.encoding)
           (req "type" side_encoding)
           (req "rate" Encoding.strfl)
           (req "amount" Encoding.strfl)
           (req "time_unix" Ptime.encoding)))
+
+let pp_print_trade ppf t =
+  Format.fprintf ppf "%a" Sexplib.Sexp.pp (sexp_of_trade t)
 
 let trade_history pair =
   post_form ~auth ~params:["currencyPair", [Pair.to_string pair]]

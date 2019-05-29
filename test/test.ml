@@ -26,7 +26,7 @@ let () =
 let wrap_request ?(speed=`Quick) n service =
   let auth = {
     Fastrest.key = cfg.Cfg.key ;
-    secret = Hex.to_string (`Hex cfg.Cfg.secret) ;
+    secret = cfg.Cfg.secret ;
     meta = [] ;
   } in
   Alcotest_async.test_case n speed begin fun () ->

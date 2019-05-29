@@ -6,6 +6,8 @@ type error = {
   message: string ;
 } [@@deriving sexp]
 
+val pp_print_error : Format.formatter -> error -> unit
+
 type trade = {
   id: int64 ;
   orderid: int64 ;
@@ -15,6 +17,10 @@ type trade = {
   qty: float ;
   time: Ptime.t ;
 } [@@deriving sexp]
+
+val pp_print_trade : Format.formatter -> trade -> unit
+
+val side_encoding : [`Buy | `Sell] Json_encoding.encoding
 
 val trade_history : Pair.t -> (post_form, trade list, error) service
 
