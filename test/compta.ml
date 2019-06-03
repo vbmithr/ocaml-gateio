@@ -43,7 +43,8 @@ let pairs_encoding =
 
 let line =
   let open Kx in
-  t7 (v timestamp) pairs_encoding (compounds char) sides_encoding (v sym) (v float) (v float)
+  t7 (v timestamp) pairs_encoding (list (s char))
+    sides_encoding (v sym) (v float) (v float)
 
 open Gateio_rest
 
