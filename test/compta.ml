@@ -28,8 +28,8 @@ let string_of_side = function `Buy -> "buy" | `Sell -> "sell"
 let sides_encoding =
   let open Kx in
   conv
-    (Array.map ~f:string_of_side)
-    (Array.map ~f:side_of_string)
+    (List.map ~f:string_of_side)
+    (List.map ~f:side_of_string)
     (v sym)
 
 open Gateio
@@ -37,8 +37,8 @@ open Gateio
 let pairs_encoding =
   let open Kx in
   conv
-    (Array.map ~f:Pair.to_string)
-    (Array.map ~f:Pair.of_string_exn)
+    (List.map ~f:Pair.to_string)
+    (List.map ~f:Pair.of_string_exn)
     (v sym)
 
 let line =
@@ -48,8 +48,7 @@ let line =
 
 open Gateio_rest
 
-let insertFills w fills =
-  let open Kx in
+let kx_of_fills fills =
   let (times,syms,tids,sides,ordTypes,prices,qties) =
     List.fold_right fills ~init:([],[],[],[],[],[],[])
       ~f:begin fun { id; orderid = _; pair; side; price; qty; time }
@@ -62,18 +61,10 @@ let insertFills w fills =
          price :: prices,
          qty :: qties)
       end in
-  let v =
-    construct line Array.(of_list times,
-                          of_list syms,
-                          of_list tids,
-                          of_list sides,
-                          of_list ordTypes,
-                          of_list prices,
-                          of_list qties) in
-  Pipe.write w ("upd", [|v|])
+  Kx_async.create line (times, syms, tids, sides, ordTypes, prices, qties)
 
 let main () =
-  Kx_async.with_connection url ~f:begin fun _r w ->
+  Kx_async.with_connection url ~f:begin fun w ->
     Fastrest.request
       ~auth:{ Fastrest.key = cfg.key ;
               secret = cfg.secret ;
@@ -83,7 +74,7 @@ let main () =
         m "%a" (Fastrest.pp_print_error pp_print_error) e
       end
     | Ok fills ->
-      insertFills w fills >>= fun () ->
+      Pipe.write w (kx_of_fills fills) >>= fun () ->
       let len = List.length fills in
       Logs_async.app (fun m -> m "Found %d fills" len) >>= fun () ->
       Deferred.List.iter fills ~f:begin fun fill ->
