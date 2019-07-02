@@ -22,7 +22,7 @@ val pp_print_trade : Format.formatter -> trade -> unit
 
 val side_encoding : [`Buy | `Sell] Json_encoding.encoding
 
-val trade_history : Pair.t -> (post_form, trade list, error) service
+val trade_history : Pair.t -> (form, trade list, error) service
 
 (* val time : (get, Ptime.t, string list) service
  * 

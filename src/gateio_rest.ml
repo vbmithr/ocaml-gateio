@@ -42,8 +42,11 @@ let result_encoding encoding =
     case (ok_encoding encoding) (function Ok a -> Some a | _ -> None) (fun a -> Ok a) ;
   ]
 
-let auth service { key ; secret ; _ } =
-  let encoded = Uri.encoded_of_query service.params in
+let auth srv { key ; secret ; _ } =
+  let ps = match srv.params with
+    | Form ps -> ps
+    | Json (_,_) -> assert false in
+  let encoded = Uri.encoded_of_query ps in
   let open Digestif in
   let sign =
     SHA512.(hmac_string ~key:secret encoded |> to_raw_string) in
@@ -53,7 +56,7 @@ let auth service { key ; secret ; _ } =
       "Key", key ;
       "Sign", sign_hex ;
     ] in
-  { params = service.params ; headers }
+  { params = Form ps ; headers }
 
 (* type error = {
  *   severity : [`E | `W] ;
