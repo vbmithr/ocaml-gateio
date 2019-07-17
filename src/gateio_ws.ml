@@ -125,7 +125,7 @@ let kind_encoding =
     bool
 
 type depth = {
-  market: string ;
+  market: Pair.t ;
   kind: [`Partial | `Update] ;
   bids: level list ;
   asks: level list ;
@@ -135,10 +135,10 @@ let depth_encoding =
   conv
     (fun { market ; kind ; bids ; asks } -> (kind, (bids, asks), market))
     (fun (kind, (bids, asks), market) -> { market ; kind ; bids ; asks })
-    (tup3 kind_encoding depthobj_encoding string)
+    (tup3 kind_encoding depthobj_encoding Pair.encoding)
 
 let success_encoding = resp_ok_encoding (obj1 (req "status" (constant "success")))
-let trade_encoding = notification_encoding "trades.update" (tup2 string (list trade_encoding))
+let trade_encoding = notification_encoding "trades.update" (tup2 Pair.encoding (list trade_encoding))
 let depth_encoding = notification_encoding "depth.update" depth_encoding
 
 type nbLevel = One | Five | Ten | Twenty | Thirty [@@deriving sexp]
@@ -149,16 +149,16 @@ let nbLevel_encoding =
     int
 
 type subscription =
-  | Ticker of string list
-  | Trades of string list
-  | Quotes of (string * nbLevel) list
+  | Ticker of Pair.t list
+  | Trades of Pair.t list
+  | Quotes of (Pair.t * nbLevel) list
 [@@deriving sexp]
 
 let quotes_spec_encoding =
   conv
     (fun (sym, lvl) -> (sym, lvl, ()))
     (fun (sym, lvl, ()) -> (sym, lvl))
-    (tup3 string nbLevel_encoding (constant "0"))
+    (tup3 Pair.encoding nbLevel_encoding (constant "0"))
 
 type t =
   | Unsubscribe of int64 * [`Trades | `Quotes]
@@ -169,7 +169,7 @@ type t =
   | TimeResp of { id: int64; ts: Ptime.t }
   | Success of int64
   | Err of { id: int64 ; err: errMsg }
-  | Trades of string * trade list
+  | Trades of Pair.t * trade list
   | Quotes of depth
 [@@deriving sexp]
 
@@ -184,10 +184,10 @@ let encoding =
     case (request_encoding "depth.unsubscribe" unit)
       (function Unsubscribe (id, `Quotes) -> Some (id, []) | _ -> None)
       (fun (id, _) -> Unsubscribe (id, `Quotes)) ;
-    case (request_encoding "ticker.subscribe" string)
+    case (request_encoding "ticker.subscribe" Pair.encoding)
       (function Subscribe (id, Ticker ts) -> Some (id, ts) | _ -> None)
       (fun (id, ts) -> Subscribe (id, Ticker ts)) ;
-    case (request_encoding "trades.subscribe" string)
+    case (request_encoding "trades.subscribe" Pair.encoding)
       (function Subscribe (id, Trades ts) -> Some (id, ts) | _ -> None)
       (fun (id, ts) -> Subscribe (id, Trades ts)) ;
     case (request_encoding "depth.subscribe" quotes_spec_encoding)

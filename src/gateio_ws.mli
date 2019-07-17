@@ -1,3 +1,5 @@
+open Gateio
+
 type errorCode =
   | InvalidArg
   | InternalErr
@@ -14,9 +16,9 @@ type errMsg = {
 type nbLevel = One | Five | Ten | Twenty | Thirty
 
 type subscription =
-  | Ticker of string list
-  | Trades of string list
-  | Quotes of (string * nbLevel) list
+  | Ticker of Pair.t list
+  | Trades of Pair.t list
+  | Quotes of (Pair.t * nbLevel) list
 
 type trade = {
   id: int64 ;
@@ -29,7 +31,7 @@ type trade = {
 type level = { p: float; q: float }
 
 type depth = {
-  market: string ;
+  market: Pair.t ;
   kind: [`Partial | `Update] ;
   bids: level list ;
   asks: level list ;
@@ -44,7 +46,7 @@ type t =
   | TimeResp of { id: int64; ts: Ptime.t }
   | Success of int64
   | Err of { id: int64 ; err: errMsg }
-  | Trades of string * trade list
+  | Trades of Pair.t * trade list
   | Quotes of depth
 [@@deriving sexp]
 
