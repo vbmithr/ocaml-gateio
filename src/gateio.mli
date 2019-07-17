@@ -1,3 +1,8 @@
+module Ezjsonm_encoding : sig
+  include module type of Json_encoding.Make(Json_repr.Ezjsonm)
+  val destruct_safe : 'a Json_encoding.encoding -> Ezjsonm.value -> 'a
+end
+
 module Encoding : sig
   val strfl : float Json_encoding.encoding
   (** [flstring] is an encoder for a float encoded as a string *)

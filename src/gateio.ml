@@ -1,5 +1,15 @@
 open Sexplib.Std
 
+module Ezjsonm_encoding = struct
+  include Json_encoding.Make(Json_repr.Ezjsonm)
+
+  let destruct_safe encoding value =
+    try destruct encoding value with exn ->
+      Format.eprintf "%a@."
+        (Json_encoding.print_error ?print_unknown:None) exn ;
+      raise exn
+end
+
 module Pair = struct
   type t = {
     base: string ;
@@ -38,6 +48,7 @@ module Encoding = struct
   let strfl =
     union [
       case float (fun a -> Some a) (fun a -> a) ;
+      case int53 (fun a -> Some (Int64.of_float a)) (fun a -> Int64.to_float a) ;
       case string (fun a -> Some (string_of_float a)) (fun a -> float_of_string a) ;
     ]
 
@@ -46,17 +57,6 @@ module Encoding = struct
       case int53 (fun i -> Some i) (fun t -> t) ;
       case string (fun i -> Some (Int64.to_string i)) Int64.of_string
     ]
-
-  (* let polo_bool =
-   *   union [
-   *     case bool (fun b -> Some b) (fun t -> t) ;
-   *     case int
-   *       (function true -> Some 1 | false -> Some 0)
-   *       (function 0 -> false | _ -> true) ;
-   *     case string
-   *       (function true -> Some "1" | false -> Some "0")
-   *       (function "0" -> false | _ -> true) ;
-   *   ] *)
 end
 
 module Ptime = struct

@@ -20,16 +20,16 @@
   ocplib-json-typed
   fastrest))
 
-; (library
-;  (name        kraken_ws)
-;  (public_name kraken-ws)
-;  (modules kraken_ws)
-;  (preprocess (pps ppx_sexp_conv))
-;  (libraries kraken ptime uri ocplib-json-typed))
+(library
+ (name        gateio_ws)
+ (public_name gateio-ws)
+ (modules gateio_ws)
+ (preprocess (pps ppx_sexp_conv))
+ (libraries gateio ptime uri ocplib-json-typed))
 
-; (library
-;  (name        kraken_ws_async)
-;  (public_name kraken-ws-async)
-;  (modules kraken_ws_async)
-;  (preprocess (pps ppx_sexp_conv))
-;  (libraries ezjsonm kraken_ws core async fastws-async))
+(library
+ (name        gateio_ws_async)
+ (public_name gateio-ws-async)
+ (modules gateio_ws_async)
+ (preprocess (pps ppx_sexp_conv))
+ (libraries ezjsonm gateio_ws core async fastws-async))
