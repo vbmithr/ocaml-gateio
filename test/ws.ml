@@ -1,12 +1,15 @@
 open Core
 open Async
 
+open Gateio
 open Gateio_ws
 
 let src = Logs.Src.create "gateio.ws-test"
     ~doc:"Gateio API - WS test application"
 
-let random_id () = Random.int64 10_000L
+let new_id =
+  let c = ref 0L in
+  fun () -> let ret = !c in c := Int64.succ !c ; ret
 
 let process_user_cmd w =
   let process s =
@@ -18,14 +21,15 @@ let process_user_cmd w =
       let chanid = Int64.of_string chanid in
       Pipe.write w (Unsubscribe (chanid, `Quotes))
     | "ping" :: _ ->
-      Pipe.write w (Ping (random_id ()))
+      Pipe.write w (Ping (new_id ()))
     | "time" :: _ ->
-      Pipe.write w (TimeReq (random_id ()))
+      Pipe.write w (TimeReq (new_id ()))
     | "trades" :: pairs ->
-      Pipe.write w (Subscribe (random_id (), Trades pairs))
+      let pairs = List.map pairs ~f:Pair.of_string_exn in
+      Pipe.write w (Subscribe (new_id (), Trades pairs))
     | "quotes" :: pairs ->
-      let spec = List.map ~f:(fun p -> p, Thirty) pairs in
-      Pipe.write w (Subscribe (random_id (), Quotes spec))
+      let spec = List.map ~f:(fun p -> Pair.of_string_exn p, Thirty) pairs in
+      Pipe.write w (Subscribe (new_id (), Quotes spec))
     | h :: _ ->
       Logs_async.err (fun m -> m "Unknown command %s" h)
     | [] ->
