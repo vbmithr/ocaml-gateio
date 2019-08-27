@@ -41,8 +41,8 @@ let rest = [
    * wrap_request "trade_balance" trade_balance ;
    * wrap_request "closed_orders" (closed_orders 0) ; *)
   wrap_request "trade_history" (trade_history {base="xtz"; quote="btc"}) ;
-  (* wrap_request "AssetPairs" asset_pairs ;
-   * wrap_request "ledgers" ledgers ; *)
+  wrap_request "trading_pairs" trading_pairs ;
+  (* wrap_request "ledgers" ledgers ; *)
 ]
 
 let () =

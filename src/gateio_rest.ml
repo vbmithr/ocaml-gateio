@@ -58,6 +58,31 @@ let auth srv { key ; secret ; _ } =
     ] in
   { params = Form ps ; headers }
 
+let trading_pairs =
+  let encoding =
+    let open Json_encoding in
+    conv
+      (function
+        | Ok vs -> List.map vs ~f:Pair.to_string
+        | Error _ -> invalid_arg "trading_pair_encoding")
+      (fun vs -> Ok (List.map vs ~f:Pair.of_string_exn))
+      (list string) in
+  get encoding
+    (Uri.make ~scheme:"https" ~host:"data.gateio.co" ~path:"api2/1/pairs" ())
+
+(* let list_encoding encoding =
+ *   let open Json_encoding in
+ *   conv
+ *     (fun s -> `O (List.map ~f:(fun (k, v) ->
+ *          (k, Json_encoding.construct encoding v)) s))
+ *     (function
+ *       | `O vs ->
+ *         List.map ~f:begin fun (k, v) ->
+ *           k, Ezjsonm_encoding.destruct_safe encoding v
+ *         end vs
+ *       | #Ezjsonm.value -> invalid_arg "list_encoding")
+ *     any_ezjson_value *)
+
 (* type error = {
  *   severity : [`E | `W] ;
  *   cat : string ;
@@ -93,18 +118,6 @@ let auth srv { key ; secret ; _ } =
  *       | #Ezjsonm.value -> invalid_arg "balance_encoding")
  *     any_ezjson_value
  * 
- * let list_encoding encoding =
- *   let open Json_encoding in
- *   conv
- *     (fun s -> `O (List.map ~f:(fun (k, v) ->
- *          (k, Json_encoding.construct encoding v)) s))
- *     (function
- *       | `O vs ->
- *         List.map ~f:begin fun (k, v) ->
- *           k, Ezjsonm_encoding.destruct_safe encoding v
- *         end vs
- *       | #Ezjsonm.value -> invalid_arg "list_encoding")
- *     any_ezjson_value
  * 
  * let boxed_list_encoding name encoding =
  *   let open Json_encoding in
@@ -116,10 +129,6 @@ let auth srv { key ; secret ; _ } =
  * let trade_encoding = boxed_list_encoding "trades" Filled_order.encoding
  * let closed_encoding = boxed_list_encoding "closed" Order.encoding
  * let ledger_encoding = boxed_list_encoding "ledger" Ledger.encoding
- * 
- * let asset_pairs =
- *   get (result_encoding (list_encoding Pair.encoding))
- *     (Uri.with_path base_url "0/public/AssetPairs")
  * 
  * let account_balance =
  *   post_form ~auth (result_encoding balances_encoding)
