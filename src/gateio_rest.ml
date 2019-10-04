@@ -5,19 +5,11 @@ open Fastrest
 let base_url =
   Uri.make ~scheme:"https" ~host:"api.gateio.co" ()
 
-type error = {
-  code: int ;
-  message: string ;
-} [@@deriving sexp]
-
-let pp_print_error ppf t =
-  Format.fprintf ppf "%a" Sexplib.Sexp.pp (sexp_of_error t)
-
 let error_encoding =
   let open Json_encoding in
   conv
-    (fun { code; message } -> (), code, message)
-    (fun ((), code, message) -> { code ; message })
+    (fun _ -> assert false)
+    (fun ((), code, message) -> Error.createf "%d: %s" code message)
     (obj3
        (req "result" (constant "false"))
        (req "code" int)

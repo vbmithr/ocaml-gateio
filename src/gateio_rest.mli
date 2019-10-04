@@ -1,13 +1,6 @@
 open Gateio
 open Fastrest
 
-type error = {
-  code: int ;
-  message: string ;
-} [@@deriving sexp]
-
-val pp_print_error : Format.formatter -> error -> unit
-
 type trade = {
   id: int64 ;
   orderid: int64 ;
@@ -22,8 +15,8 @@ val pp_print_trade : Format.formatter -> trade -> unit
 
 val side_encoding : [`Buy | `Sell] Json_encoding.encoding
 
-val trade_history : Pair.t -> (form, trade list, error) service
-val trading_pairs : (form, Pair.t list, error) service
+val trade_history : Pair.t -> (form, trade list) service
+val trading_pairs : (form, Pair.t list) service
 
 (* val time : (get, Ptime.t, string list) service
  * 
