@@ -18,42 +18,41 @@ let string_of_json encoding cmd =
 let incr64 r = r := Int64.succ !r
 
 let connect ?ping () =
-  Fastws_async.connect_ez url >>|
-  Result.map ~f:begin fun (r, w, cleaned_up) ->
-    let pingid = ref Int64.(100_000L + (Random.int64 100_000L)) in
-    let client_read = Pipe.map r ~f:begin fun msg ->
-        Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
-      end in
-    let ws_read, client_write = Pipe.create () in
-    don't_wait_for
-      (Pipe.closed client_write >>| fun () -> Pipe.close w) ;
-    begin match ping with
-      | None -> ()
-      | Some span ->
-        Clock_ns.every' span ~stop:(Pipe.closed w) begin fun () ->
-          let ping = string_of_json encoding (Ping !pingid) in
-          incr64 pingid ;
-          Log_async.debug (fun m -> m "-> %s" ping) >>= fun () ->
-          Pipe.write w ping
-        end
-    end ;
-    don't_wait_for @@
-    Pipe.transfer ws_read w ~f:begin fun cmd ->
-      let doc = string_of_json encoding cmd in
-      Log.debug (fun m -> m "-> %s" doc) ;
-      doc
-    end ;
-    (client_read, client_write, cleaned_up)
-  end
+  Deferred.Or_error.map (Fastws_async.EZ.connect url)
+    ~f:begin fun { r; w; cleaned_up } ->
+      let pingid = ref Int64.(100_000L + (Random.int64 100_000L)) in
+      let client_read = Pipe.map r ~f:begin fun msg ->
+          Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
+        end in
+      let ws_read, client_write = Pipe.create () in
+      don't_wait_for
+        (Pipe.closed client_write >>| fun () -> Pipe.close w) ;
+      begin match ping with
+        | None -> ()
+        | Some span ->
+          Clock_ns.every' span ~stop:(Pipe.closed w) begin fun () ->
+            let ping = string_of_json encoding (Ping !pingid) in
+            incr64 pingid ;
+            Log_async.debug (fun m -> m "-> %s" ping) >>= fun () ->
+            Pipe.write w ping
+          end
+      end ;
+      don't_wait_for @@
+      Pipe.transfer ws_read w ~f:begin fun cmd ->
+        let doc = string_of_json encoding cmd in
+        Log.debug (fun m -> m "-> %s" doc) ;
+        doc
+      end ;
+      (client_read, client_write, cleaned_up)
+    end
 
 let connect_exn ?ping () =
   connect ?ping () >>= function
-  | Error `Internal exn -> raise exn
-  | Error `WS e -> Fastws_async.raise_error e
+  | Error e -> Error.raise e
   | Ok a -> return a
 
 let with_connection ?ping f =
-  Fastws_async.with_connection_ez url ~f:begin fun r w ->
+  Fastws_async.EZ.with_connection url ~f:begin fun r w ->
     let pingid = ref Int64.(100_000L + (Random.int64 100_000L)) in
     begin match ping with
       | None -> () ;
@@ -82,7 +81,5 @@ let with_connection ?ping f =
 
 let with_connection_exn ?ping f =
   with_connection ?ping f >>= function
-  | Error `Internal exn -> raise exn
-  | Error `User_callback exn -> raise exn
-  | Error `WS e -> Fastws_async.raise_error e
+  | Error e -> Error.raise e
   | Ok a -> return a
