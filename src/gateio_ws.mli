@@ -25,7 +25,7 @@ type trade = {
   ts: Ptime.t ;
   price: float ;
   amount: float ;
-  side: [`Buy | `Sell] ;
+  side: Fixtypes.Side.t ;
 }
 
 type level = { p: float; q: float }

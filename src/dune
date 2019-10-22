@@ -3,7 +3,7 @@
  (public_name gateio)
  (modules gateio)
  (preprocess (pps ppx_sexp_conv))
- (libraries hex ptime uri ezjsonm ocplib-json-typed))
+ (libraries fixtypes hex ptime uri ezjsonm ocplib-json-typed))
 
 (library
  (name        gateio_rest)
