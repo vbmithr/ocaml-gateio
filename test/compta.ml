@@ -68,15 +68,14 @@ let main () =
     Fastrest.request
       ~auth:{ Fastrest.key = cfg.key ;
               secret = cfg.secret ;
-              meta = [] } (Gateio_rest.trade_history {base="xtz"; quote="btc"}) >>= function
-    | Error e -> Log_async.err (fun m -> m "%a" Error.pp e)
-    | Ok fills ->
-      Pipe.write w (kx_of_fills fills) >>= fun () ->
-      let len = List.length fills in
-      Logs_async.app (fun m -> m "Found %d fills" len) >>= fun () ->
-      Deferred.List.iter fills ~f:begin fun fill ->
-        Log_async.app (fun m -> m "%a" pp_print_trade fill)
-      end
+              meta = [] }
+      (Gateio_rest.trade_history {base="xtz"; quote="btc"}) >>|? fun fills ->
+    Pipe.write w (kx_of_fills fills) >>= fun () ->
+    let len = List.length fills in
+    Logs_async.app (fun m -> m "Found %d fills" len) >>= fun () ->
+    Deferred.List.iter fills ~f:begin fun fill ->
+      Log_async.app (fun m -> m "%a" pp_print_trade fill)
+    end
   end >>= fun _ ->
   Deferred.unit
 
