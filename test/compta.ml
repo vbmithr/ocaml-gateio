@@ -28,8 +28,8 @@ let string_of_side = function `Buy -> "buy" | `Sell -> "sell"
 let sides_encoding =
   let open Kx in
   conv
-    (List.map ~f:string_of_side)
-    (List.map ~f:side_of_string)
+    (Array.map ~f:string_of_side)
+    (Array.map ~f:side_of_string)
     (v sym)
 
 open Gateio
@@ -37,8 +37,8 @@ open Gateio
 let pairs_encoding =
   let open Kx in
   conv
-    (List.map ~f:Pair.to_string)
-    (List.map ~f:Pair.of_string_exn)
+    (Array.map ~f:Pair.to_string)
+    (Array.map ~f:Pair.of_string_exn)
     (v sym)
 
 let line =
@@ -61,7 +61,9 @@ let kx_of_fills fills =
          price :: prices,
          qty :: qties)
       end in
-  Kx_async.create line (times, syms, tids, sides, ordTypes, prices, qties)
+  Kx_async.create line Array.(of_list times, of_list syms, tids,
+                              of_list sides, of_list ordTypes,
+                              of_list prices, of_list qties)
 
 let main () =
   Kx_async.Async.with_connection url ~f:begin fun { w; _ } ->
