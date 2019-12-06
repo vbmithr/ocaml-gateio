@@ -18,11 +18,27 @@ val side_encoding : [`Buy | `Sell] Json_encoding.encoding
 val trade_history : Pair.t -> (form, trade list) service
 val trading_pairs : (form, Pair.t list) service
 
-(* val time : (get, Ptime.t, string list) service
- * 
- * type 'a assoc = (string * 'a) list [@@deriving sexp]
- * 
- * val account_balance : (post_form, float assoc, string list) service
- * val trade_balance : (post_form, Balance.t, string list) service
- * val closed_orders : int -> (post_form, Order.t assoc, string list) service
- * val ledgers : (post_form, Ledger.t assoc, string list) service *)
+type balances = {
+  available: (string * float) list ;
+  locked: (string * float) list ;
+}
+
+val balances : (form, balances) service
+
+type movement = {
+  id: string;
+  currency: string;
+  address: string;
+  amount: float;
+  txid: string;
+  timestamp: Ptime.t;
+  status: [`Done];
+}
+
+type movements = {
+  deposits: movement list;
+  withdrawals: movement list;
+}
+
+val movements :
+  ?start:Ptime.t -> ?stop:Ptime.t -> unit -> (form, movements) service

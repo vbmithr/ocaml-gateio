@@ -1,12 +1,12 @@
 open Core
 open Gateio
 open Fastrest
+open Json_encoding
 
 let base_url =
   Uri.make ~scheme:"https" ~host:"api.gateio.co" ()
 
 let error_encoding =
-  let open Json_encoding in
   conv
     (fun _ -> assert false)
     (fun ((), code, message) -> Error.createf "%d: %s" code message)
@@ -16,7 +16,6 @@ let error_encoding =
        (req "message" string))
 
 let ok_encoding encoding =
-  let open Json_encoding in
   conv
     (fun a -> ((), "", 0), a)
     (fun (_, a) -> a)
@@ -27,11 +26,17 @@ let ok_encoding encoding =
           (req "code" int))
        encoding)
 
+let simple_ok encoding =
+  conv
+    (fun _ -> assert false)
+    (fun ((), v) -> v)
+    (merge_objs (obj1 (req "result" (constant "true"))) encoding)
+
 let result_encoding encoding =
-  let open Json_encoding in
   union [
     case error_encoding (function Error a -> Some a | _ -> None) (fun a -> Error a) ;
     case (ok_encoding encoding) (function Ok a -> Some a | _ -> None) (fun a -> Ok a) ;
+    case (simple_ok encoding) (function Ok a -> Some a | _ -> None) (fun a -> Ok a)
   ]
 
 let auth srv { key ; secret ; _ } =
@@ -52,7 +57,6 @@ let auth srv { key ; secret ; _ } =
 
 let trading_pairs =
   let encoding =
-    let open Json_encoding in
     conv
       (function
         | Ok vs -> List.map vs ~f:Pair.to_string
@@ -61,79 +65,6 @@ let trading_pairs =
       (list string) in
   get encoding
     (Uri.make ~scheme:"https" ~host:"data.gateio.co" ~path:"api2/1/pairs" ())
-
-(* let list_encoding encoding =
- *   let open Json_encoding in
- *   conv
- *     (fun s -> `O (List.map ~f:(fun (k, v) ->
- *          (k, Json_encoding.construct encoding v)) s))
- *     (function
- *       | `O vs ->
- *         List.map ~f:begin fun (k, v) ->
- *           k, Ezjsonm_encoding.destruct_safe encoding v
- *         end vs
- *       | #Ezjsonm.value -> invalid_arg "list_encoding")
- *     any_ezjson_value *)
-
-(* type error = {
- *   severity : [`E | `W] ;
- *   cat : string ;
- *   msg : string ;
- *   extra : string option ;
- * }
- * 
- * let time =
- *   let time_encoding =
- *     let open Json_encoding in
- *     conv
- *       (fun t -> (), Int64.of_float (Ptime.to_float_s t))
- *       (fun ((), t) -> match Ptime.of_float_s (Int64.to_float t) with
- *          | None -> invalid_arg "time_encoding"
- *          | Some t -> t)
- *       (merge_objs unit (obj1 (req "unixtime" int53)))
- *   in
- *   get (result_encoding time_encoding)
- *     (Uri.with_path base_url "0/public/Time")
- * 
- * 
- * type 'a assoc = (string * 'a) list [@@deriving sexp]
- * 
- * let balances_encoding =
- *   let open Json_encoding in
- *   conv
- *     (fun s -> `O (List.map ~f:(fun (k, v) -> (k, `Float v)) s))
- *     (function
- *       | `O vs ->
- *         List.map ~f:(function
- *             | k, `String v -> k, float_of_string v
- *             | _ -> invalid_arg "balance_encoding") vs
- *       | #Ezjsonm.value -> invalid_arg "balance_encoding")
- *     any_ezjson_value
- * 
- * 
- * let boxed_list_encoding name encoding =
- *   let open Json_encoding in
- *   conv (fun t -> t, 0l) (fun (t, _) -> t)
- *     (obj2
- *        (req name (list_encoding encoding))
- *        (req "count" int32))
- * 
- * let trade_encoding = boxed_list_encoding "trades" Filled_order.encoding
- * let closed_encoding = boxed_list_encoding "closed" Order.encoding
- * let ledger_encoding = boxed_list_encoding "ledger" Ledger.encoding
- * 
- * let account_balance =
- *   post_form ~auth (result_encoding balances_encoding)
- *     (Uri.with_path base_url "0/private/Balance")
- * 
- * let trade_balance =
- *   post_form ~auth (result_encoding Balance.encoding)
- *     (Uri.with_path base_url "0/private/TradeBalance")
- * 
- * let closed_orders ofs =
- *   post_form ~auth ~params:["ofs", [Int.to_string ofs]]
- *     (result_encoding closed_encoding)
- *     (Uri.with_path base_url "0/private/ClosedOrders") *)
 
 type trade = {
   id: int64 ;
@@ -146,14 +77,12 @@ type trade = {
 } [@@deriving sexp]
 
 let side_encoding =
-  let open Json_encoding in
   conv
     (function `Buy -> "buy" | `Sell -> "sell")
     (function "buy" -> `Buy | _ -> `Sell)
     string
 
 let trade_encoding =
-  let open Json_encoding in
   conv
     (fun { id ; orderid ; pair ; side ; price ; qty ; time } ->
        (), (id, orderid, pair, side, price, qty, time))
@@ -174,9 +103,88 @@ let pp_print_trade ppf t =
 
 let trade_history pair =
   post_form ~auth ~params:["currencyPair", [Pair.to_string pair]]
-    (result_encoding Json_encoding.(obj1 (req "trades" (list trade_encoding))))
+    (result_encoding (obj1 (req "trades" (list trade_encoding))))
     (Uri.with_path base_url "api2/1/private/tradeHistory")
 
-(* let ledgers =
- *   post_form ~auth (result_encoding ledger_encoding)
- *     (Uri.with_path base_url "0/private/Ledgers") *)
+type balances = {
+  available: (string * float) list ;
+  locked: (string * float) list ;
+}
+
+let bs =
+  conv
+    (fun _ -> assert false)
+    (function
+      | `O vs ->
+        List.Assoc.map vs ~f:(function
+            | `String s -> Float.of_string s
+            | _ -> assert false)
+      | _ -> assert false)
+    any_ezjson_value
+
+let b =
+  conv
+    (fun _ -> assert false)
+    (fun (available, locked) -> { available; locked })
+    (obj2 (req "available" bs) (req "locked" bs))
+
+let balances =
+  post_form ~auth
+    (result_encoding b)
+    (Uri.with_path base_url "api2/1/private/balances")
+
+type movement = {
+  id: string;
+  currency: string;
+  address: string;
+  amount: float;
+  txid: string;
+  timestamp: Ptime.t;
+  status: [`Done];
+}
+
+let status =
+  string_enum [
+    "DONE", `Done;
+  ]
+
+let movement =
+  conv
+    (fun _ -> assert false)
+    (fun (id, currency, address, amount, txid, timestamp, status) ->
+       { id; currency; address; amount; txid; timestamp; status })
+    (obj7
+       (req "id" string)
+       (req "currency" string)
+       (req "address" string)
+       (req "amount" Encoding.strfl)
+       (req "txid" string)
+       (req "timestamp" Ptime.encoding)
+       (req "status" status))
+
+type movements = {
+  deposits: movement list;
+  withdrawals: movement list;
+}
+
+let movements =
+  conv
+    (fun _ -> assert false)
+    (fun (deposits, withdrawals) -> { deposits; withdrawals })
+    (obj2
+       (req "deposits" (list movement))
+       (req "withdraws" (list movement)))
+
+let movements ?(start=Ptime.epoch) ?stop () =
+  let string_of_time time =
+    Printf.sprintf "%.0f" (Ptime.to_float_s time) in
+  let params =
+    List.filter_opt
+      [Some ("start", [string_of_time start]);
+       Option.map stop ~f:(fun stop -> ("end", [string_of_time stop]));
+      ] in
+  post_form
+    ~auth
+    ~params
+    (result_encoding movements)
+    (Uri.with_path base_url "api2/1/private/depositsWithdrawals")
