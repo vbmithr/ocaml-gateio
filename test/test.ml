@@ -43,7 +43,7 @@ let rest = [
   wrap_request "trade_history" (trade_history {base="xtz"; quote="btc"}) ;
   wrap_request "trading_pairs" trading_pairs ;
   wrap_request "balances" balances ;
-  wrap_request "movements" (movements ()) ;
+  wrap_request "entries" (entries ()) ;
 ]
 
 let () =

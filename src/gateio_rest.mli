@@ -23,7 +23,7 @@ type balances = {
 
 val balances : (form, balances) service
 
-type movement = {
+type entry = {
   id: string;
   currency: string;
   address: string;
@@ -31,12 +31,14 @@ type movement = {
   txid: string;
   timestamp: Ptime.t;
   status: [`Done];
+} [@@deriving sexp]
+
+val pp_entry : entry Fmt.t
+
+type entries = {
+  deposits: entry list;
+  withdrawals: entry list;
 }
 
-type movements = {
-  deposits: movement list;
-  withdrawals: movement list;
-}
-
-val movements :
-  ?start:Ptime.t -> ?stop:Ptime.t -> unit -> (form, movements) service
+val entries :
+  ?start:Ptime.t -> ?stop:Ptime.t -> unit -> (form, entries) service

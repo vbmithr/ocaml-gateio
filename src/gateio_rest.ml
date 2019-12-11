@@ -132,7 +132,7 @@ let balances =
     (result_encoding b)
     (Uri.with_path base_url "api2/1/private/balances")
 
-type movement = {
+type entry = {
   id: string;
   currency: string;
   address: string;
@@ -140,14 +140,17 @@ type movement = {
   txid: string;
   timestamp: Ptime.t;
   status: [`Done];
-}
+} [@@deriving sexp]
+
+let pp_entry ppf t =
+  Format.fprintf ppf "%a" Sexplib.Sexp.pp (sexp_of_entry t)
 
 let status =
   string_enum [
     "DONE", `Done;
   ]
 
-let movement =
+let entry =
   conv
     (fun _ -> assert false)
     (fun (id, currency, address, amount, txid, timestamp, status) ->
@@ -161,9 +164,9 @@ let movement =
        (req "timestamp" Ptime.encoding)
        (req "status" status))
 
-type movements = {
-  deposits: movement list;
-  withdrawals: movement list;
+type entries = {
+  deposits: entry list;
+  withdrawals: entry list;
 }
 
 let movements =
@@ -171,15 +174,15 @@ let movements =
     (fun _ -> assert false)
     (fun (deposits, withdrawals) -> { deposits; withdrawals })
     (obj2
-       (req "deposits" (list movement))
-       (req "withdraws" (list movement)))
+       (req "deposits" (list entry))
+       (req "withdraws" (list entry)))
 
-let movements ?(start=Ptime.epoch) ?stop () =
+let entries ?start ?stop () =
   let string_of_time time =
     Printf.sprintf "%.0f" (Ptime.to_float_s time) in
   let params =
     List.filter_opt
-      [Some ("start", [string_of_time start]);
+      [Option.map start ~f:(fun start -> "start", [string_of_time start]);
        Option.map stop ~f:(fun stop -> ("end", [string_of_time stop]));
       ] in
   post_form

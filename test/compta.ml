@@ -76,19 +76,44 @@ let kx_of_fills trades =
   Kx_async.create Kx.(t3 (a sym) (a sym) tradesw)
     ("upd", "trades", (times, syms, xchs, ids, oids, sides, ordTypes, pxs, qties))
 
+let auth =
+  { Fastrest.key = cfg.key ;
+    secret = cfg.secret ;
+    meta = [] }
+
+let getFills w =
+  Fastrest.request ~auth
+    (Gateio_rest.trade_history {base="xtz"; quote="btc"}) >>=? fun fills ->
+  Pipe.write w (kx_of_fills fills) >>= fun () ->
+  let len = List.length fills in
+  Logs_async.app (fun m -> m "Found %d fills" len) >>= fun () ->
+  Deferred.List.iter fills ~f:begin fun fill ->
+    Log_async.app (fun m -> m "%a" pp_print_trade fill)
+  end >>= fun () ->
+  Deferred.Or_error.return ()
+
+let getLedgers _w =
+  let rec inner _start =
+    let latestTs = ref Ptime.epoch in
+    Fastrest.request ~auth
+      (Gateio_rest.entries ()) >>=? fun { deposits; withdrawals } ->
+    let len = List.(length deposits + length withdrawals) in
+    (* Pipe.write w (kx_of_fills fills) >>= fun () -> *)
+    Logs_async.app (fun m -> m "Found %d entries" len) >>= fun () ->
+    Deferred.List.iter deposits ~f:begin fun e ->
+      Log_async.app (fun m -> m "%a" pp_entry e)
+    end >>= fun () ->
+    Deferred.List.iter withdrawals ~f:begin fun e ->
+      Log_async.app (fun m -> m "%a" pp_entry e)
+    end >>= fun () ->
+    if len > 0 then inner !latestTs else Deferred.Or_error.return ()
+  in
+  inner Ptime.epoch
+
 let main () =
   Kx_async.Async.with_connection url ~f:begin fun { w; _ } ->
-    Fastrest.request
-      ~auth:{ Fastrest.key = cfg.key ;
-              secret = cfg.secret ;
-              meta = [] }
-      (Gateio_rest.trade_history {base="xtz"; quote="btc"}) >>|? fun fills ->
-    Pipe.write w (kx_of_fills fills) >>= fun () ->
-    let len = List.length fills in
-    Logs_async.app (fun m -> m "Found %d fills" len) >>= fun () ->
-    Deferred.List.iter fills ~f:begin fun fill ->
-      Log_async.app (fun m -> m "%a" pp_print_trade fill)
-    end
+    getFills w >>=? fun () ->
+    getLedgers w
   end >>= fun _ ->
   Deferred.unit
 

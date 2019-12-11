@@ -11,14 +11,15 @@
  (modules gateio_rest)
  (preprocess (pps ppx_sexp_conv))
  (libraries
-  core
-  base64
-  digestif.c
-  gateio
-  ptime
-  uri
-  ocplib-json-typed
-  fastrest))
+   fmt
+   core
+   base64
+   digestif.c
+   gateio
+   ptime
+   uri
+   ocplib-json-typed
+   fastrest))
 
 (library
  (name        gateio_ws)
