@@ -1,7 +1,7 @@
 open Core
 open Async
 
-let src = Logs.Src.create "kraken.compta"
+let src = Logs.Src.create "gateio.compta"
 module Log_async = (val Logs_async.src_log src : Logs_async.LOG)
 
 module Cfg = struct
@@ -22,10 +22,10 @@ let cfg =
 
 let url = Uri.make ~scheme:"kdb" ~host:"localhost" ~port:5042 ()
 
-let side_of_string = function "buy" -> `Buy | _ -> `Sell
-let string_of_side = function `Buy -> "buy" | `Sell -> "sell"
+let side_of_string = function "buy" -> Fixtypes.Side.Buy | _ -> Sell
+let string_of_side = function Fixtypes.Side.Buy -> "buy" | Sell -> "sell"
 
-let sides_encoding =
+let sides =
   let open Kx in
   conv
     (Array.map ~f:string_of_side)
@@ -34,36 +34,47 @@ let sides_encoding =
 
 open Gateio
 
-let pairs_encoding =
+let pairs =
   let open Kx in
   conv
     (Array.map ~f:Pair.to_string)
     (Array.map ~f:Pair.of_string_exn)
     (v sym)
 
-let line =
-  let open Kx in
-  t7 (v timestamp) pairs_encoding (list (s char))
-    sides_encoding (v sym) (v float) (v float)
-
 open Gateio_rest
 
-let kx_of_fills fills =
-  let (times,syms,tids,sides,ordTypes,prices,qties) =
-    List.fold_right fills ~init:([],[],[],[],[],[],[])
-      ~f:begin fun { id; orderid = _; pair; side; price; qty; time }
-        (times,syms,tids,sides,ordTypes,prices,qties) ->
-        (time :: times,
-         pair :: syms,
-         Int64.to_string id :: tids,
-         side :: sides,
-         "" :: ordTypes,
-         price :: prices,
-         qty :: qties)
-      end in
-  Kx_async.create line Array.(of_list times, of_list syms, of_list tids,
-                              of_list sides, of_list ordTypes,
-                              of_list prices, of_list qties)
+let tradesw = Kx.(t9 (v timestamp) pairs (v sym) (v guid) (v guid) sides (v sym) (v float) (v float))
+
+let uuid_of_int64 i =
+  let buf = Bytes.make 16 '\x00' in
+  EndianBytes.BigEndian.set_int64 buf 8 i ;
+  Option.value_exn (Uuidm.of_bytes (Bytes.unsafe_to_string ~no_mutation_while_string_reachable:buf))
+
+let guids =
+  Kx.(conv (Array.map ~f:uuid_of_int64) (fun _ -> assert false) (v guid))
+
+let kx_of_fills trades =
+  let len = List.length trades in
+  let ids = Array.create ~len Uuidm.nil in
+  let xchs = Array.create ~len "GIO" in
+  let oids = Array.create ~len Uuidm.nil in
+  let syms = Array.create ~len (Pair.create ~base:"" ~quote:"") in
+  let times = Array.create ~len Ptime.epoch in
+  let sides = Array.create ~len Fixtypes.Side.Buy in
+  let pxs = Array.create ~len Float.nan in
+  let qties = Array.create ~len Float.nan in
+  let ordTypes = Array.create ~len "" in
+  List.iteri trades ~f:begin fun i ({ id; orderid; pair; side; price; qty; time } : trade) ->
+    times.(i) <- time ;
+    ids.(i) <- uuid_of_int64 id ;
+    oids.(i) <- uuid_of_int64 orderid ;
+    syms.(i) <- pair ;
+    sides.(i) <- side ;
+    pxs.(i) <- price ;
+    qties.(i) <- qty ;
+  end ;
+  Kx_async.create Kx.(t3 (a sym) (a sym) tradesw)
+    ("upd", "trades", (times, syms, xchs, ids, oids, sides, ordTypes, pxs, qties))
 
 let main () =
   Kx_async.Async.with_connection url ~f:begin fun { w; _ } ->
