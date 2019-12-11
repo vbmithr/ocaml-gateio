@@ -20,6 +20,8 @@ module Pair : sig
     quote: string ;
   } [@@deriving sexp]
 
+  val create : base:string -> quote:string -> t
+
   val compare : t -> t -> int
 
   val pp : Format.formatter -> t -> unit

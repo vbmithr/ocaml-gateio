@@ -16,6 +16,8 @@ module Pair = struct
     quote: string ;
   } [@@deriving sexp]
 
+  let create ~base ~quote = { base; quote }
+
   let compare { base ; quote } { base = base' ; quote = quote' } =
     match String.compare base base' with
     | 0 -> String.compare quote quote'

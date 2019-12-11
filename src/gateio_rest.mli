@@ -5,15 +5,13 @@ type trade = {
   id: int64 ;
   orderid: int64 ;
   pair: Pair.t ;
-  side: [`Buy | `Sell] ;
+  side: Fixtypes.Side.t ;
   price: float ;
   qty: float ;
   time: Ptime.t ;
 } [@@deriving sexp]
 
 val pp_print_trade : Format.formatter -> trade -> unit
-
-val side_encoding : [`Buy | `Sell] Json_encoding.encoding
 
 val trade_history : Pair.t -> (form, trade list) service
 val trading_pairs : (form, Pair.t list) service

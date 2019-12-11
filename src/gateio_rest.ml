@@ -70,16 +70,15 @@ type trade = {
   id: int64 ;
   orderid: int64 ;
   pair: Pair.t ;
-  side: [`Buy | `Sell] ;
+  side: Fixtypes.Side.t ;
   price: float ;
   qty: float ;
   time: Ptime.t ;
 } [@@deriving sexp]
 
 let side_encoding =
-  conv
-    (function `Buy -> "buy" | `Sell -> "sell")
-    (function "buy" -> `Buy | _ -> `Sell)
+  conv (fun _ -> assert false)
+    (function "buy" -> Fixtypes.Side.Buy | _ -> Sell)
     string
 
 let trade_encoding =
