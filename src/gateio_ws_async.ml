@@ -73,8 +73,9 @@ let connect ?ping url =
 module Persistent = struct
   include Persistent_connection_kernel.Make(T)
 
-  let create' ~server_name ?on_event ?retry_delay =
-    create ~server_name ?on_event ?retry_delay ~connect
+  let create' ~server_name ?on_event ?retry_delay ?ping=
+    create ~server_name ?on_event ?retry_delay
+      ~connect:(connect ?ping)
 end
 
 let connect_exn ?ping url =

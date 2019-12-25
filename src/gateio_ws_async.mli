@@ -30,5 +30,6 @@ module Persistent : sig
     server_name:string ->
     ?on_event:(Event.t -> unit Deferred.t) ->
     ?retry_delay:(unit -> Time_ns.Span.t) ->
+    ?ping:Time_ns.Span.t ->
     (unit -> address Or_error.t Deferred.t) -> t
 end
