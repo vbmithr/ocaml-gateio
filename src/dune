@@ -33,4 +33,4 @@
  (public_name gateio-ws-async)
  (modules gateio_ws_async)
  (preprocess (pps ppx_sexp_conv))
- (libraries ezjsonm gateio_ws core async fastws-async))
+ (libraries uri-sexp ezjsonm gateio_ws core async fastws-async))

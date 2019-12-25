@@ -42,7 +42,7 @@ let process_user_cmd w =
   loop ()
 
 let main () =
-  Gateio_ws_async.with_connection_exn begin fun r w ->
+  Gateio_ws_async.with_connection_exn url ~f:begin fun r w ->
     let log_incoming msg =
       Logs_async.debug ~src (fun m -> m "%a" pp msg) in
     Deferred.all_unit [

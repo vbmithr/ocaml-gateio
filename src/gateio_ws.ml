@@ -2,6 +2,8 @@ open Sexplib.Std
 open Gateio
 open Json_encoding
 
+let url = Uri.make ~scheme:"https" ~host:"ws.gateio.ws" ~path:"v3/" ()
+
 type errorCode =
   | InvalidArg
   | InternalErr

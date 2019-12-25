@@ -1,5 +1,7 @@
 open Gateio
 
+val url : Uri.t
+
 type errorCode =
   | InvalidArg
   | InternalErr
