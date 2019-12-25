@@ -11,17 +11,26 @@ module Ezjsonm_encoding = struct
 end
 
 module Pair = struct
-  type t = {
-    base: string ;
-    quote: string ;
-  } [@@deriving sexp]
+  module T = struct
+    type t = {
+      base: string ;
+      quote: string ;
+    } [@@deriving sexp]
 
-  let create ~base ~quote = { base; quote }
+    let create ~base ~quote = { base; quote }
 
-  let compare { base ; quote } { base = base' ; quote = quote' } =
-    match String.compare base base' with
-    | 0 -> String.compare quote quote'
-    | n -> n
+    let compare { base ; quote } { base = base' ; quote = quote' } =
+      match String.compare base base' with
+      | 0 -> String.compare quote quote'
+      | n -> n
+
+    let equal a b = compare a b = 0
+    let hash = Hashtbl.hash
+  end
+  include T
+  module Set = Set.Make(T)
+  module Map = Map.Make(T)
+  module Table = Hashtbl.Make(T)
 
   let pp ppf { base ; quote } =
     Format.fprintf ppf "%s_%s" base quote
