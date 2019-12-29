@@ -62,7 +62,7 @@ let launch_ping w = function
     end
 
 let connect ?ping url =
-  Deferred.Or_error.map (Fastws_async.EZ.connect url)
+  Deferred.Or_error.map (Fastws_async.connect url)
     ~f:begin fun { r; w; _ } ->
       let client_write = mk_client_write w in
       (Pipe.closed client_write >>> fun () -> Pipe.close w) ;
@@ -84,7 +84,7 @@ let connect_exn ?ping url =
   | Ok a -> return a
 
 let with_connection ?ping ~f url =
-  Fastws_async.EZ.with_connection url ~f:begin fun r w ->
+  Fastws_async.with_connection url ~f:begin fun r w ->
     launch_ping w ping ;
     f (mk_client_read r) (mk_client_write w)
   end
