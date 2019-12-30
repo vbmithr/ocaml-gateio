@@ -22,9 +22,12 @@
  (name ws)
  (modules ws)
  (public_name gateio-ws-cli)
- (package gateio-ws-async)
+ (package gateio-ws)
  (preprocess (pps ppx_jane ppx_sexp_conv))
  (libraries
+   core
+   async
+   fastws-async
+   logs-async
    logs-async-reporter
-   gateio-ws
-   gateio-ws-async))
+   gateio-ws))

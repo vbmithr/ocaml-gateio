@@ -111,7 +111,7 @@ let getLedgers _w =
   inner Ptime.epoch
 
 let main () =
-  Kx_async.with_connection url ~f:begin fun { w; _ } ->
+  Kx_async.with_connection url begin fun _ w ->
     getFills w >>=? fun () ->
     getLedgers w
   end >>= fun _ ->

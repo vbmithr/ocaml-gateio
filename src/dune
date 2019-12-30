@@ -27,10 +27,3 @@
  (modules gateio_ws)
  (preprocess (pps ppx_sexp_conv))
  (libraries gateio ptime uri ocplib-json-typed))
-
-(library
- (name        gateio_ws_async)
- (public_name gateio-ws-async)
- (modules gateio_ws_async)
- (preprocess (pps ppx_sexp_conv))
- (libraries uri-sexp ezjsonm gateio_ws core async fastws-async))
