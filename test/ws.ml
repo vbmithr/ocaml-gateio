@@ -42,7 +42,7 @@ let process_user_cmd w =
   loop ()
 
 let main () =
-  Fastws_async.with_connection url ~of_string ~to_string begin fun _ r w ->
+  Fastws_async.with_connection url ~of_string ~to_string begin fun r w ->
     let log_incoming msg =
       Logs_async.debug ~src (fun m -> m "%a" pp msg) in
     Deferred.all_unit [

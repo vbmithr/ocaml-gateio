@@ -30,9 +30,8 @@ let wrap_request ?(speed=`Quick) n service =
     meta = [] ;
   } in
   Alcotest_async.test_case n speed begin fun () ->
-    Fastrest.request ~auth service >>= function
-    | Ok _v -> Deferred.unit
-    | Error _ -> failwith ""
+    Fastrest.request ~auth service |>
+    Deferred.ignore_m
   end
 
 let rest = [
