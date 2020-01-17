@@ -3,7 +3,10 @@
  (public_name gateio)
  (modules gateio)
  (preprocess (pps ppx_sexp_conv))
- (libraries fixtypes hex ptime uri ezjsonm ocplib-json-typed))
+ (libraries
+   sexplib
+   ptime
+   ocplib-json-typed))
 
 (library
  (name        gateio_rest)
@@ -11,11 +14,10 @@
  (modules gateio_rest)
  (preprocess (pps ppx_sexp_conv))
  (libraries
-   fmt
-   core
-   base64
-   digestif.c
    gateio
+   fixtypes
+   core
+   digestif.c
    ptime
    uri
    ocplib-json-typed
@@ -26,4 +28,11 @@
  (public_name gateio-ws)
  (modules gateio_ws)
  (preprocess (pps ppx_sexp_conv))
- (libraries gateio ptime uri ocplib-json-typed))
+ (libraries
+   gateio
+   fixtypes
+   ezjsonm
+   sexplib
+   ptime
+   uri
+   ocplib-json-typed))

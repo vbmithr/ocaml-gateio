@@ -1,0 +1,23 @@
+opam-version: "2.0"
+authors: "Vincent Bernardoff <vb@luminar.eu.org>"
+maintainer: "Vincent Bernardoff <vb@luminar.eu.org>"
+homepage: "https://github.com/vbmithr/ocaml-gateio"
+bug-reports: "https://github.com/vbmithr/ocaml-gateio/issues"
+dev-repo: "git+https://github.com/vbmithr/ocaml-gateio"
+doc: "https://vbmithr.github.io/ocaml-gateio/doc"
+build: [ "dune" "build" "-j" jobs "-p" name ]
+run-test: [ "dune" "runtest" "-j" jobs "-p" name ]
+depends: [
+  "dune" {>= "1.11.4"}
+  "gateio" {= version}
+  "fixtypes" {= version}
+  "fastrest" {= version}
+  "core" {>= "v0.12.4"}
+  "digestif" {>= "0.8.0"}
+  "ptime" {>= "0.8.5"}
+  "uri" {>= "3.1.0"}
+  "ocplib-json-typed" {>= "0.7.1"}
+]
+synopsis: "Gate.io API"
+description: """
+"""
