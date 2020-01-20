@@ -1,6 +1,7 @@
 (test
  (name       test)
  (modules    test)
+ (package gateio-rest)
  (preprocess (pps ppx_jane ppx_sexp_conv))
  (libraries
    gateio-rest
