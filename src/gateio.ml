@@ -1,15 +1,5 @@
 open Sexplib.Std
 
-module Ezjsonm_encoding = struct
-  include Json_encoding.Make(Json_repr.Ezjsonm)
-
-  let destruct_safe encoding value =
-    try destruct encoding value with exn ->
-      Format.eprintf "%a@."
-        (Json_encoding.print_error ?print_unknown:None) exn ;
-      raise exn
-end
-
 module Pair = struct
   module T = struct
     type t = {

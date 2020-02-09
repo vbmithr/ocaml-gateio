@@ -31,7 +31,6 @@
  (libraries
    gateio
    fixtypes
-   ezjsonm
    sexplib
    ptime
    uri

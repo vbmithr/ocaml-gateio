@@ -54,5 +54,3 @@ type t =
 
 val pp : Format.formatter -> t -> unit
 val encoding : t Json_encoding.encoding
-val of_string : string -> t
-val to_string : t -> string

@@ -29,6 +29,7 @@
  (libraries
    core
    async
+   yojson
    fastws-async
    logs-async
    logs-async-reporter

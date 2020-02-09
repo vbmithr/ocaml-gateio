@@ -220,13 +220,3 @@ let encoding =
       (function Quotes q -> Some q | _ -> None)
       (fun q -> Quotes q) ;
   ]
-
-let of_string msg =
-  Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
-
-let to_string t =
-  match Ezjsonm_encoding.construct encoding t with
-  | `A _ | `O _ as a -> Ezjsonm.to_string a
-  | #Json_repr.ezjsonm -> assert false
-
-
