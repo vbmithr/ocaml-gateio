@@ -1,7 +1,7 @@
 open Core
 open Async
-
 open Gateio_rest
+open Alcotest_async
 
 let key, secret =
   match String.split ~on:':' (Sys.getenv_exn "TOKEN_GATEIO") with
@@ -14,7 +14,7 @@ let wrap_request ?(speed=`Quick) n service =
     secret = secret ;
     meta = [] ;
   } in
-  Alcotest_async.test_case n speed begin fun () ->
+  test_case n speed begin fun () ->
     Fastrest.request ~auth service |>
     Deferred.ignore_m
   end
@@ -30,9 +30,11 @@ let rest = [
   wrap_request "entries" (entries ()) ;
 ]
 
-let () =
-  Logs.set_reporter (Logs_async_reporter.reporter ()) ;
-  Logs.set_level (Some Debug) ;
-  Alcotest.run "gateio" [
+let main () =
+  run "gateio" [
     "rest", rest ;
   ]
+
+let () =
+  don't_wait_for (main ()) ;
+  never_returns (Scheduler.go ())
